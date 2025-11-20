@@ -1034,15 +1034,71 @@
         overlay: document.getElementById('mobile-overlay'),
         chatList: document.getElementById('chat-list'),
         
+        // Command History State
+        cmdHistory: JSON.parse(localStorage.getItem('cmd_history') || '[]'),
+        historyIndex: -1, // -1 means "new message" / not browsing history
+        savedDraft: '',
+
         init() {
           this.userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
           });
           this.userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); App.sendMessage(); }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              App.sendMessage();
+            }
+            // History Navigation
+            if (e.key === 'ArrowUp') this.handleHistoryNav(e, 'up');
+            if (e.key === 'ArrowDown') this.handleHistoryNav(e, 'down');
           });
           this.updateModelBadge();
+          this.historyIndex = this.cmdHistory.length; // Initialize to "end"
+        },
+
+        addToHistory(text) {
+          // Don't add duplicates if same as last
+          if (this.cmdHistory.length === 0 || this.cmdHistory[this.cmdHistory.length - 1] !== text) {
+            this.cmdHistory.push(text);
+            if (this.cmdHistory.length > 50) this.cmdHistory.shift(); // Keep last 50
+            localStorage.setItem('cmd_history', JSON.stringify(this.cmdHistory));
+          }
+          this.historyIndex = this.cmdHistory.length;
+          this.savedDraft = '';
+        },
+
+        handleHistoryNav(e, dir) {
+          if (dir === 'up') {
+            // Navigate back only if at start of input
+            if (this.userInput.selectionStart === 0) {
+              if (this.historyIndex === this.cmdHistory.length) {
+                 this.savedDraft = this.userInput.value;
+              }
+
+              if (this.historyIndex > 0) {
+                e.preventDefault();
+                this.historyIndex--;
+                this.userInput.value = this.cmdHistory[this.historyIndex];
+                // Move cursor to end? Usually desirable.
+                // setTimeout(() => this.userInput.setSelectionRange(this.userInput.value.length, this.userInput.value.length), 0);
+              }
+            }
+          } else if (dir === 'down') {
+            // Navigate forward only if at end of input
+            if (this.userInput.selectionStart === this.userInput.value.length) {
+              if (this.historyIndex < this.cmdHistory.length) {
+                e.preventDefault();
+                this.historyIndex++;
+
+                if (this.historyIndex === this.cmdHistory.length) {
+                  this.userInput.value = this.savedDraft;
+                } else {
+                  this.userInput.value = this.cmdHistory[this.historyIndex];
+                }
+              }
+            }
+          }
         },
 
         toggleSidebar() {
@@ -1267,6 +1323,7 @@
 
           // Adiciona msg usuario
           UI.appendMessage('user', text);
+          UI.addToHistory(text); // Add to command history
           this.chats[chatIndex].messages.push({ role: "user", content: text });
           
           // Atualiza titulo se for a primeira msg
@@ -1298,9 +1355,16 @@
             if (useResponsesApi) {
                 apiUrl = 'https://api.openai.com/v1/responses';
 
+                // Concatenate history for context since Responses API might be stateless regarding 'input'
+                // or just send the last message. The prompt implies 'input' is the query.
+                // For a better chat experience, let's try to format history into the input or instructions?
+                // Actually, let's strictly follow the "input" field pattern.
+                // Adding 'instructions' (System Prompt) is crucial.
+
                 body = {
                     model: localStorage.getItem(provider + '_model'),
-                    input: text, // Responses API uses 'input' string. Sending last user message.
+                    input: text,
+                    instructions: localStorage.getItem('system_prompt') || "You are a helpful assistant."
                 };
 
                 if (localStorage.getItem('openai_web_search') === 'true') {
