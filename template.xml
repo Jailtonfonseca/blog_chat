@@ -1,0 +1,1264 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html b:css='false' b:defaultwidgetversion='2' b:layoutsVersion='3' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+  <head>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1' name='viewport'/>
+    <title>Groq DevStudio</title>
+    <link href='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;display=swap' rel='stylesheet'/>
+    
+    <script src='https://cdn.jsdelivr.net/npm/marked/marked.min.js'/>
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css' rel='stylesheet'/>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js'/>
+    <script async='async' defer='defer' src='https://accounts.google.com/gsi/client'/>
+
+    <b:skin><![CDATA[
+      :root {
+        --bg-dark: #0f1117;
+        --bg-panel: #1e212b;
+        --bg-message: #282c38;
+        --primary: #6c5ce7;
+        --primary-hover: #5b4bc4;
+        --text-main: #e0e0e0;
+        --text-muted: #9ca3af;
+        --border: #333842;
+        --code-header: #2d313c;
+        --font-ui: 'Inter', sans-serif;
+        --font-code: 'JetBrains Mono', monospace;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+      body, html { height: 100%; overflow: hidden; font-family: var(--font-ui); background: var(--bg-dark); color: var(--text-main); }
+
+      /* Ocultar elementos do Blogger */
+      .navbar, .blog-posts, .sidebar, .footer, .widget-content, iframe[name^="google"], .blogger-style-notice { display: none !important; }
+
+      /* ---- LAYOUT PRINCIPAL ---- */
+      #app-container { display: flex; height: 100vh; width: 100%; position: relative; }
+
+      /* SIDEBAR */
+      #sidebar {
+        width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border);
+        display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease;
+        z-index: 100;
+      }
+      .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+      .logo { font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+      .new-chat-btn {
+        background: var(--primary); color: white; border: none; padding: 10px; width: 100%;
+        margin: 15px 0 0 0; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
+      }
+      .new-chat-btn:hover { background: var(--primary-hover); }
+      
+      #chat-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+      .chat-item {
+        padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text-muted);
+        font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; group;
+        transition: 0.2s;
+      }
+      .chat-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+      .chat-item.active { background: rgba(108, 92, 231, 0.2); color: var(--primary); border: 1px solid rgba(108, 92, 231, 0.3); }
+      .chat-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+      .delete-chat { opacity: 0; background: none; border: none; color: #ff5555; cursor: pointer; padding: 4px; }
+      .chat-item:hover .delete-chat { opacity: 1; }
+
+      /* SETTINGS BUTTON FOOTER */
+      .sidebar-footer { padding: 15px; border-top: 1px solid var(--border); }
+      .settings-btn { background: transparent; color: var(--text-muted); border: none; display: flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; padding: 8px; border-radius: 6px; }
+      .settings-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+      /* ÁREA PRINCIPAL */
+      #main-area { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; min-width: 0; }
+      
+      header {
+        height: 60px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+        border-bottom: 1px solid var(--border); background: var(--bg-dark);
+      }
+      .mobile-menu-btn { display: none; background: none; border: none; color: #fff; cursor: pointer; margin-right: 15px; }
+      .model-badge { font-size: 0.75rem; background: #2a2a2a; padding: 4px 10px; border-radius: 12px; color: #aaa; border: 1px solid var(--border); }
+
+      /* CHAT BOX */
+      #chat-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
+      
+      .msg-row { display: flex; width: 100%; margin-bottom: 10px; }
+      .msg-row.user { justify-content: flex-end; }
+      .msg-row.ai { justify-content: flex-start; }
+      
+      .bubble { max-width: 85%; padding: 15px; border-radius: 12px; line-height: 1.6; position: relative; word-wrap: break-word; }
+      .bubble.user { background: var(--bg-message); color: #fff; border-bottom-right-radius: 2px; }
+      .bubble.ai { background: transparent; color: #ddd; padding: 0 15px; max-width: 100%; width: 100%; }
+
+      /* ESTILOS DE CÓDIGO E MARKDOWN */
+      .bubble.ai p { margin-bottom: 1em; }
+      .bubble.ai ul, .bubble.ai ol { margin-left: 20px; margin-bottom: 1em; }
+      
+      /* BLOCO DE CÓDIGO PERSONALIZADO */
+      .code-block-wrapper {
+        background: #0d0d0d; border-radius: 8px; border: 1px solid var(--border);
+        margin: 15px 0; overflow: hidden;
+      }
+      .code-header {
+        display: flex; justify-content: space-between; align-items: center;
+        background: var(--code-header); padding: 6px 12px; border-bottom: 1px solid var(--border);
+      }
+      .lang-label { font-family: var(--font-code); font-size: 0.75rem; color: #aaa; text-transform: uppercase; }
+      .code-actions { display: flex; gap: 8px; }
+      .action-btn {
+        background: transparent; border: none; color: #aaa; cursor: pointer;
+        display: flex; align-items: center; gap: 4px; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; transition: 0.2s;
+      }
+      .action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+      .action-btn svg { width: 14px; height: 14px; }
+      
+      pre { margin: 0 !important; padding: 15px; overflow-x: auto; }
+      code { font-family: var(--font-code) !important; font-size: 0.9rem; }
+
+      /* INPUT AREA */
+      .input-area { padding: 20px; background: var(--bg-dark); border-top: 1px solid var(--border); }
+      .input-container {
+        position: relative; background: var(--bg-panel); border: 1px solid var(--border);
+        border-radius: 12px; padding: 10px; display: flex; gap: 10px; align-items: flex-end;
+        transition: border-color 0.2s;
+      }
+      .input-container:focus-within { border-color: var(--primary); }
+      textarea {
+        flex: 1; background: transparent; border: none; color: #fff; resize: none;
+        height: 24px; max-height: 200px; font-family: var(--font-ui); font-size: 1rem;
+        line-height: 1.5; padding: 0 5px;
+      }
+      .send-btn {
+        background: var(--primary); border: none; width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; flex-shrink: 0;
+      }
+      .send-btn:hover { background: var(--primary-hover); }
+      .send-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #444; }
+
+      /* RESPONSIVIDADE */
+      @media (max-width: 768px) {
+        #sidebar {
+          position: absolute; left: 0; top: 0; height: 100%;
+          transform: translateX(-100%); box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+        #sidebar.active { transform: translateX(0); }
+        .mobile-menu-btn { display: block; }
+        .overlay {
+          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.7); z-index: 90; display: none; backdrop-filter: blur(2px);
+        }
+        .overlay.active { display: block; }
+      }
+
+      /* MODAL GENÉRICO */
+      .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 1000; display: none;
+        justify-content: center; align-items: center;
+      }
+      .modal-overlay.active { display: flex; }
+      .modal { background: var(--bg-panel); padding: 25px; width: 90%; max-width: 500px; border-radius: 12px; border: 1px solid var(--border); }
+      .form-group { margin-bottom: 15px; }
+      .form-group label { display: block; margin-bottom: 8px; color: #aaa; font-size: 0.9rem; }
+      .form-control {
+        width: 100%; padding: 12px; background: #111; border: 1px solid var(--border);
+        color: #fff; border-radius: 6px; outline: none; font-family: var(--font-ui);
+      }
+      .form-control:focus { border-color: var(--primary); }
+
+      /* MODAL DE PREVIEW DE CÓDIGO */
+      #preview-modal .modal { width: 95%; max-width: 1000px; height: 80vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+      .preview-header { padding: 10px 20px; background: #111; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+      #preview-frame { width: 100%; height: 100%; border: none; background: #fff; }
+    ]]></b:skin>
+  </head>
+  <body>
+    
+    <div id='app-container'>
+      <div class='overlay' id='mobile-overlay' onclick='UI.toggleSidebar()'/>
+
+      <aside id='sidebar'>
+        <div class='sidebar-header'>
+          <div class='logo'>
+            <svg fill='var(--primary)' viewBox='0 0 24 24' width='24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/></svg>
+            DevStudio
+          </div>
+        </div>
+        <div style='padding: 0 15px;'>
+          <button class='new-chat-btn' onclick='App.createNewChat()'>
+            <span>+</span> Novo Chat
+          </button>
+        </div>
+        <div id='chat-list'>
+          </div>
+        <div class='sidebar-footer'>
+          <button class='settings-btn' onclick='UI.openSettings()'>
+            <svg fill='currentColor' viewBox='0 0 24 24' width='18'><path d='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L5.09 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z'/></svg>
+            Configurações
+          </button>
+        </div>
+      </aside>
+
+      <main id='main-area'>
+        <header>
+          <div style='display:flex; align-items:center;'>
+            <button class='mobile-menu-btn' onclick='UI.toggleSidebar()'>
+              <svg fill='currentColor' viewBox='0 0 24 24' width='24'><path d='M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z'/></svg>
+            </button>
+            <h1 id='header-title' style='font-size:1rem; font-weight:600; margin-left:10px;'>Chat Atual</h1>
+          </div>
+          <div class='actions'>
+            <span class='model-badge' id='current-model-badge'>Llama 3.1</span>
+          </div>
+        </header>
+
+        <div id='chat-box'>
+          </div>
+        
+        <div id='typing-indicator' style='display:none; padding: 0 20px 10px; color: var(--primary); font-size: 0.8rem; font-style: italic;'>
+          Groq está digitando...
+        </div>
+
+        <div class='input-area'>
+          <div class='input-container'>
+            <textarea id='user-input' placeholder='Digite sua mensagem... (Shift+Enter para pular linha)' rows='1'/>
+            <button class='send-btn' id='btn-submit' onclick='App.sendMessage()'>
+              <svg fill='#fff' viewBox='0 0 24 24' width='20'><path d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/></svg>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class='modal-overlay' id='settings-modal'>
+      <div class='modal'>
+        <h2 style='margin-bottom:20px; color:#fff;'>Configurações API</h2>
+        <div class='form-group'>
+          <label>Groq API Key</label>
+          <input class='form-control' id='api-key' placeholder='gsk_...' type='password'/>
+        </div>
+        <div class='form-group'>
+          <label>Modelo</label>
+          <input class='form-control' id='model-input' placeholder='llama-3.1-70b-versatile' type='text' value='llama-3.1-70b-versatile'/>
+        </div>
+        <div class='form-group'>
+          <label>System Prompt</label>
+          <textarea class='form-control' id='system-prompt' rows='3'>Você é um programador expert e prestativo. Responda com código limpo e explicações claras.</textarea>
+        </div>
+        <div style='display:flex; gap:10px; margin-top:20px; justify-content:flex-end;'>
+          <button class='action-btn' onclick='UI.closeSettings()' style='font-size:0.9rem; padding:10px;'>Cancelar</button>
+          <button class='send-btn' onclick='App.saveSettings()' style='width:auto; padding:0 20px;'>Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class='modal-overlay' id='preview-modal'>
+      <div class='modal'>
+        <div class='preview-header'>
+          <span style='color:#fff; font-weight:600;'>Preview do Código</span>
+          <button class='action-btn' onclick='document.getElementById(&quot;preview-modal&quot;).classList.remove(&quot;active&quot;)'>Fechar &#10005;</button>
+        </div>
+        <iframe id='preview-frame'/>
+      </div>
+    </div>
+
+    <div style='display:none;'>
+      <b:section id='main' showaddelement='no'>
+        <b:widget id='Blog1' locked='true' title='Postagens no blog' type='Blog' version='2' visible='true'>
+          <b:widget-settings>
+            <b:widget-setting name='showDateHeader'>false</b:widget-setting>
+            <b:widget-setting name='style.textcolor'>#ffffff</b:widget-setting>
+            <b:widget-setting name='showShareButtons'>true</b:widget-setting>
+            <b:widget-setting name='showCommentLink'>true</b:widget-setting>
+            <b:widget-setting name='style.urlcolor'>#ffffff</b:widget-setting>
+            <b:widget-setting name='showAuthor'>false</b:widget-setting>
+            <b:widget-setting name='style.linkcolor'>#ffffff</b:widget-setting>
+            <b:widget-setting name='style.unittype'>TextAndImage</b:widget-setting>
+            <b:widget-setting name='style.bgcolor'>#ffffff</b:widget-setting>
+            <b:widget-setting name='timestampLabel'/>
+            <b:widget-setting name='reactionsLabel'/>
+            <b:widget-setting name='showAuthorProfile'>false</b:widget-setting>
+            <b:widget-setting name='style.layout'>1x1</b:widget-setting>
+            <b:widget-setting name='showLabels'>true</b:widget-setting>
+            <b:widget-setting name='showLocation'>true</b:widget-setting>
+            <b:widget-setting name='postLabelsLabel'/>
+            <b:widget-setting name='showTimestamp'>true</b:widget-setting>
+            <b:widget-setting name='postsPerAd'>1</b:widget-setting>
+            <b:widget-setting name='showBacklinks'>false</b:widget-setting>
+            <b:widget-setting name='style.bordercolor'>#ffffff</b:widget-setting>
+            <b:widget-setting name='showInlineAds'>false</b:widget-setting>
+            <b:widget-setting name='showReactions'>false</b:widget-setting>
+          </b:widget-settings>
+          <b:includable id='main' var='this'>
+  <div class='blog-posts hfeed container'>
+    <b:loop index='i' values='data:posts' var='post'>
+      <b:include data='post' name='postCommentsAndAd'/>
+    </b:loop>
+  </div>
+  <b:include cond='data:view.isMultipleItems' name='postPagination'/>
+  <b:include name='feedLinks'/>
+  <b:if cond='data:blog.isGoogleEverywhereLinkTooltipEnabled'>
+    <b:include name='tooltipCss'/>
+  </b:if>
+</b:includable>
+          <b:includable id='aboutPostAuthor'>
+  <div class='author-name'>
+    <a class='g-profile' expr:href='data:post.author.profileUrl' rel='author' title='author profile'>
+      <span>
+        <data:post.author.name/>
+      </span>
+    </a>
+  </div>
+  <div>
+    <span class='author-desc'>
+      <data:post.author.aboutMe/>
+    </span>
+  </div>
+</b:includable>
+          <b:includable id='addComments'>
+  <a expr:href='data:post.commentsUrl' expr:onclick='data:post.commentsUrlOnclick'>
+    <b:message name='messages.postAComment'/>
+  </a>
+</b:includable>
+          <b:includable id='blogThisShare'>
+  <b:with value='&quot;window.open(this.href, \&quot;_blank\&quot;, \&quot;height=270,width=475\&quot;); return false;&quot;' var='onclick'>
+    <b:include name='platformShare'/>
+  </b:with>
+</b:includable>
+          <b:includable id='bylineByName' var='byline'>
+  <b:switch var='data:byline.name'>
+  <b:case value='share'/>
+    <b:include cond='data:post.shareUrl' name='postShareButtons'/>
+  <b:case value='comments'/>
+    <b:include cond='data:post.allowComments' name='postCommentsLink'/>
+  <b:case value='location'/>
+    <b:include cond='data:post.location' name='postLocation'/>
+  <b:case value='timestamp'/>
+    <b:include cond='not data:view.isPage' name='postTimestamp'/>
+  <b:case value='author'/>
+    <b:include name='postAuthor'/>
+  <b:case value='labels'/>
+    <b:include cond='data:post.labels' name='postLabels'/>
+  <b:case value='icons'/>
+    <b:include cond='data:post.emailPostUrl' name='emailPostIcon'/>
+  </b:switch>
+</b:includable>
+          <b:includable id='bylineRegion' var='regionItems'>
+  <b:loop values='data:regionItems' var='byline'>
+    <b:include data='byline' name='bylineByName'/>
+  </b:loop>
+</b:includable>
+          <b:includable id='commentAuthorAvatar'>
+  <div class='avatar-image-container'>
+    <img class='author-avatar' expr:src='data:comment.authorAvatarSrc' height='35' width='35'/>
+  </div>
+</b:includable>
+          <b:includable id='commentDeleteIcon' var='comment'>
+  <span expr:class='&quot;item-control &quot; + data:comment.adminClass'>
+    <b:if cond='data:showCmtPopup'>
+      <div class='goog-toggle-button'>
+        <div class='goog-inline-block comment-action-icon'/>
+      </div>
+    <b:else/>
+      <a class='comment-delete' expr:href='data:comment.deleteUrl' expr:title='data:messages.deleteComment'>
+        <img src='https://resources.blogblog.com/img/icon_delete13.gif'/>
+      </a>
+    </b:if>
+  </span>
+</b:includable>
+          <b:includable id='commentForm' var='post'>
+  <div class='comment-form'>
+    <a name='comment-form'/>
+    <h4 id='comment-post-message'><data:messages.postAComment/></h4>
+    <b:if cond='data:this.messages.blogComment != &quot;&quot;'>
+      <p><data:this.messages.blogComment/></p>
+    </b:if>
+    <b:include data='post' name='commentFormIframeSrc'/>
+    <iframe allowtransparency='allowtransparency' class='blogger-iframe-colorize blogger-comment-from-post' expr:height='data:cmtIframeInitialHeight ?: &quot;90px&quot;' frameborder='0' id='comment-editor' name='comment-editor' src='' width='100%'/>
+    <data:post.cmtfpIframe/>
+    <script type='text/javascript'>
+      BLOG_CMT_createIframe(&#39;<data:post.appRpcRelayPath/>&#39;);
+    </script>
+  </div>
+</b:includable>
+          <b:includable id='commentFormIframeSrc' var='post'>
+  <a expr:href='data:post.commentFormIframeSrc' id='comment-editor-src'/>
+</b:includable>
+          <b:includable id='commentItem' var='comment'>
+  <div class='comment' expr:id='&quot;c&quot; + data:comment.id'>
+    <b:include cond='data:blog.enabledCommentProfileImages' name='commentAuthorAvatar'/>
+
+    <div class='comment-block'>
+      <div class='comment-author'>
+        <b:if cond='data:comment.authorUrl'>
+          <b:message name='messages.authorSaidWithLink'>
+            <b:param expr:value='data:comment.author' name='authorName'/>
+            <b:param expr:value='data:comment.authorUrl' name='authorUrl'/>
+          </b:message>
+        <b:else/>
+          <b:message name='messages.authorSaid'>
+            <b:param expr:value='data:comment.author' name='authorName'/>
+          </b:message>
+        </b:if>
+      </div>
+      <div expr:class='&quot;comment-body&quot; + (data:comment.isDeleted ? &quot; deleted&quot; : &quot;&quot;)'>
+        <data:comment.body/>
+      </div>
+      <div class='comment-footer'>
+        <span class='comment-timestamp'>
+          <a expr:href='data:comment.url' title='comment permalink'>
+            <data:comment.timestamp/>
+          </a>
+          <b:include data='comment' name='commentDeleteIcon'/>
+        </span>
+      </div>
+    </div>
+  </div>
+</b:includable>
+          <b:includable id='commentList' var='comments'>
+  <div id='comments-block'>
+    <b:loop values='data:comments' var='comment'>
+      <b:include data='comment' name='commentItem'/>
+    </b:loop>
+  </div>
+</b:includable>
+          <b:includable id='commentPicker' var='post'>
+  <b:if cond='data:post.showThreadedComments'>
+    <b:include data='post' name='threadedComments'/>
+  <b:else/>
+    <b:include data='post' name='comments'/>
+  </b:if>
+</b:includable>
+          <b:includable id='comments' var='post'>
+  <section expr:class='&quot;comments&quot; + (data:post.embedCommentForm ? &quot; embed&quot; : &quot;&quot;)' expr:data-num-comments='data:post.numberOfComments' id='comments'>
+    <a name='comments'/>
+    <b:if cond='data:post.allowComments'>
+
+      <b:include name='commentsTitle'/>
+
+      <div expr:id='data:widget.instanceId + &quot;_comments-block-wrapper&quot;'>
+        <b:include cond='data:post.comments' data='post.comments' name='commentList'/>
+      </div>
+
+      <b:if cond='data:post.commentPagingRequired'>
+        <div class='paging-control-container'>
+          <b:if cond='data:post.hasOlderLinks'>
+            <a expr:class='data:post.oldLinkClass' expr:href='data:post.oldestLinkUrl'>
+              <data:messages.oldest/>
+            </a>
+            <a expr:class='data:post.oldLinkClass' expr:href='data:post.olderLinkUrl'>
+              <data:messages.older/>
+            </a>
+          </b:if>
+
+          <span class='comment-range-text'>
+            <data:post.commentRangeText/>
+          </span>
+
+          <b:if cond='data:post.hasNewerLinks'>
+            <a expr:class='data:post.newLinkClass' expr:href='data:post.newerLinkUrl'>
+              <data:messages.newer/>
+            </a>
+            <a expr:class='data:post.newLinkClass' expr:href='data:post.newestLinkUrl'>
+              <data:messages.newest/>
+            </a>
+          </b:if>
+        </div>
+      </b:if>
+
+      <div class='footer'>
+        <b:if cond='data:post.embedCommentForm'>
+          <b:if cond='data:post.allowNewComments'>
+            <b:include data='post' name='commentForm'/>
+          <b:else/>
+            <data:post.noNewCommentsText/>
+          </b:if>
+        <b:else/>
+          <b:if cond='data:post.allowComments'>
+            <b:include data='post' name='addComments'/>
+          </b:if>
+        </b:if>
+      </div>
+    </b:if>
+    <b:if cond='data:showCmtPopup'>
+      <div id='comment-popup'>
+        <iframe allowtransparency='allowtransparency' frameborder='0' id='comment-actions' name='comment-actions' scrolling='no'>
+        </iframe>
+      </div>
+    </b:if>
+  </section>
+</b:includable>
+          <b:includable id='commentsLink'>
+  <a class='comment-link' expr:href='data:post.commentsUrl' expr:onclick='data:post.commentsUrlOnclick'>
+    <b:if cond='data:post.numberOfComments &gt; 0'>
+      <b:message name='messages.numberOfComments'>
+        <b:param expr:value='data:post.numberOfComments' name='numComments'/>
+      </b:message>
+    <b:else/>
+      <data:messages.postAComment/>
+    </b:if>
+  </a>
+</b:includable>
+          <b:includable id='commentsLinkIframe'>
+  <!-- G+ comments, no longer available. The includable is retained for backwards-compatibility. -->
+</b:includable>
+          <b:includable id='commentsTitle'>
+  <h3 class='title'><data:messages.comments/></h3>
+</b:includable>
+          <b:includable id='defaultAdUnit'>
+  <ins class='adsbygoogle' data-ad-format='auto' expr:data-ad-client='data:adClientId ?: data:blog.adsenseClientId' expr:data-ad-host='data:blog.adsenseHostId' expr:style='data:style ?: &quot;display: block;&quot;'>
+    <b:attr cond='not data:blog.analytics4' expr:value='data:blog.analyticsAccountNumber' name='data-analytics-uacct'/>
+  </ins>
+  <script>
+   (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+</b:includable>
+          <b:includable id='emailPostIcon'>
+  <span class='byline post-icons'>
+    <!-- email post links -->
+    <span class='item-action'>
+      <a expr:href='data:post.emailPostUrl' expr:title='data:messages.emailPost'>
+        <b:include data='{ iconClass: &quot;touch-icon sharing-icon&quot; }' name='emailIcon'/>
+      </a>
+    </span>
+  </span>
+</b:includable>
+          <b:includable id='facebookShare'>
+  <b:with value='&quot;window.open(this.href, \&quot;_blank\&quot;, \&quot;height=430,width=640\&quot;); return false;&quot;' var='onclick'>
+    <b:include name='platformShare'/>
+  </b:with>
+</b:includable>
+          <b:includable id='feedLinks'>
+  <b:if cond='!data:view.isPost'> <!-- Blog feed links -->
+    <b:if cond='data:feedLinks'>
+      <div class='blog-feeds'>
+        <b:include data='feedLinks' name='feedLinksBody'/>
+      </div>
+    </b:if>
+  <b:else/> <!--Post feed links -->
+    <div class='post-feeds'>
+      <b:loop values='data:posts' var='post'>
+        <b:if cond='data:post.allowComments and data:post.feedLinks'>
+          <b:include data='post.feedLinks' name='feedLinksBody'/>
+        </b:if>
+      </b:loop>
+    </div>
+  </b:if>
+</b:includable>
+          <b:includable id='feedLinksBody' var='links'>
+  <div class='feed-links'>
+  <data:messages.subscribeTo/>
+  <b:loop values='data:links' var='f'>
+     <a class='feed-link' expr:href='data:f.url' expr:type='data:f.mimeType' target='_blank'><data:f.name/> (<data:f.feedType/>)</a>
+  </b:loop>
+  </div>
+</b:includable>
+          <b:includable id='footerBylines'>
+  <b:if cond='data:widgets.Blog.first.footerBylines'>
+    <b:loop index='i' values='data:widgets.Blog.first.footerBylines' var='region'>
+      <b:if cond='not data:region.items.empty'>
+        <div expr:class='&quot;post-footer-line post-footer-line-&quot; + (data:i + 1)'>
+          <b:with value='&quot;footer-&quot; + (data:i + 1)' var='regionName'>
+            <b:include data='region.items' name='bylineRegion'/>
+          </b:with>
+        </div>
+      </b:if>
+    </b:loop>
+  </b:if>
+</b:includable>
+          <b:includable id='googlePlusShare'>
+</b:includable>
+          <b:includable id='headerByline'>
+  <b:if cond='data:widgets.Blog.first.headerByline'>
+    <div class='post-header'>
+      <div class='post-header-line-1'>
+        <b:with value='&quot;header-1&quot;' var='regionName'>
+          <b:include data='data:widgets.Blog.first.headerByline.items' name='bylineRegion'/>
+        </b:with>
+      </div>
+    </div>
+  </b:if>
+</b:includable>
+          <b:includable id='homePageLink'>
+  <a class='home-link' expr:href='data:blog.homepageUrl'>
+    <data:messages.home/>
+  </a>
+</b:includable>
+          <b:includable id='iframeComments' var='post'>
+  <!-- G+ comments, no longer available. The includable is retained for backwards-compatibility. -->
+</b:includable>
+          <b:includable id='inlineAd' var='post'>
+  <b:if cond='!data:view.isPreview'>
+    <b:if cond='data:this.adCode or data:this.adClientId or data:blog.adsenseClientId'>
+      <!-- Ad -->
+      <div class='inline-ad'>
+        <b:if cond='data:this.adCode != &quot;&quot;'>
+          <data:this.adCode/>
+        <b:else/>
+          <b:include cond='data:this.adClientId or data:blog.adsenseClientId' name='defaultAdUnit'/>
+        </b:if>
+      </div>
+    </b:if>
+  <b:else/>
+    <div class='inline-ad'>
+      <div class='inline-ad-placeholder'>
+        <span><b:message name='messages.adsGoHere'/></span>
+      </div>
+    </div>
+  </b:if>
+</b:includable>
+          <b:includable id='linkShare'>
+  <b:with value='&quot;window.prompt(\&quot;Copy to clipboard: Ctrl+C, Enter\&quot;, \&quot;&quot; + data:originalUrl + &quot;\&quot;); return false;&quot;' var='onclick'>
+    <b:include name='platformShare'/>
+  </b:with>
+</b:includable>
+          <b:includable id='nextPageLink'>
+  <a class='blog-pager-older-link' expr:href='data:olderPageUrl' expr:id='data:widget.instanceId + &quot;_blog-pager-older-link&quot;' expr:title='data:messages.olderPosts'>
+    <data:messages.olderPosts/>
+  </a>
+</b:includable>
+          <b:includable id='otherSharingButton'>
+  <span class='sharing-platform-button sharing-element-other' expr:aria-label='data:messages.shareToOtherApps.escaped' expr:data-url='data:originalUrl' expr:title='data:messages.shareToOtherApps.escaped' role='menuitem' tabindex='-1'>
+    <b:with value='{key: &quot;sharingOther&quot;}' var='platform'>
+      <b:include name='sharingPlatformIcon'/>
+    </b:with>
+    <span class='platform-sharing-text'><data:messages.shareOtherApps.escaped/></span>
+  </span>
+</b:includable>
+          <b:includable id='platformShare'>
+  <a expr:class='&quot;goog-inline-block sharing-&quot; + data:platform.key' expr:data-url='data:originalUrl' expr:href='data:shareUrl + &quot;&amp;target=&quot; + data:platform.target' expr:onclick='data:onclick ? data:onclick : &quot;&quot;' expr:title='data:platform.shareMessage' target='_blank'>
+    <span class='share-button-link-text'>
+      <data:platform.shareMessage/>
+    </span>
+  </a>
+</b:includable>
+          <b:includable id='post' var='post'>
+  <div class='post'>
+    <b:include data='post' name='postMeta'/>
+    <b:include data='post' name='postTitle'/>
+    <b:include name='headerByline'/>
+    <b:if cond='data:view.isSingleItem'>
+      <b:include data='post' name='postBody'/>
+    <b:else/>
+      <b:include data='post' name='postBodySnippet'/>
+      <b:include data='post' name='postJumpLink'/>
+    </b:if>
+    <b:include data='post' name='postFooter'/>
+  </div>
+</b:includable>
+          <b:includable id='postAuthor'>
+  <span class='byline post-author vcard'>
+    <span class='post-author-label'>
+      <data:byline.label/>
+    </span>
+    <span class='fn'>
+      <b:if cond='data:post.author.profileUrl'>
+        <meta expr:content='data:post.author.profileUrl'/>
+        <a class='g-profile' expr:href='data:post.author.profileUrl' rel='author' title='author profile'>
+          <span><data:post.author.name/></span>
+        </a>
+      <b:else/>
+        <span><data:post.author.name/></span>
+      </b:if>
+    </span>
+  </span>
+</b:includable>
+          <b:includable id='postBody' var='post'>
+  <!-- If metaDescription is empty, use the post body as the schema.org description too, for G+/FB snippeting. -->
+  <div class='post-body entry-content float-container' expr:id='&quot;post-body-&quot; + data:post.id'>
+    <data:post.body/>
+  </div>
+</b:includable>
+          <b:includable id='postBodySnippet' var='post'>
+  <b:include data='post' name='postBody'/>
+</b:includable>
+          <b:includable id='postCommentsAndAd' var='post'>
+  <article class='post-outer-container'>
+    <!-- Post title and body -->
+    <div class='post-outer'>
+      <b:include data='post' name='post'/>
+    </div>
+
+    <!-- Comments -->
+    <b:include cond='data:view.isSingleItem' data='post' name='commentPicker'/>
+
+    <!-- Show ad inside post container, after comments, if single item. -->
+    <b:include cond='data:view.isSingleItem and data:post.includeAd' data='post' name='inlineAd'/>
+  </article>
+
+  <!-- Show ad outside post container (between posts) for feed pages. -->
+  <b:include cond='data:view.isMultipleItems and data:post.includeAd' data='post' name='inlineAd'/>
+</b:includable>
+          <b:includable id='postCommentsLink'>
+  <b:if cond='data:view.isMultipleItems'>
+    <span class='byline post-comment-link container'>
+      <b:include cond='data:post.commentSource != 1' name='commentsLink'/>
+    </span>
+  </b:if>
+</b:includable>
+          <b:includable id='postFooter' var='post'>
+  <div class='post-footer'>
+    <b:include name='footerBylines'/>
+    <b:include data='post' name='postFooterAuthorProfile'/>
+  </div>
+</b:includable>
+          <b:includable id='postFooterAuthorProfile' var='post'>
+  <b:if cond='data:post.author.aboutMe and data:view.isPost'>
+    <div class='author-profile'>
+      <b:if cond='data:post.author.authorPhoto.url'>
+        <img class='author-image' expr:src='data:post.author.authorPhoto.url' width='50px'/>
+        <div class='author-about'>
+          <b:include data='post' name='aboutPostAuthor'/>
+        </div>
+      <b:else/>
+        <b:include data='post' name='aboutPostAuthor'/>
+      </b:if>
+    </div>
+  </b:if>
+</b:includable>
+          <b:includable id='postHeader' var='post'>
+  <b:include name='headerByline'/>
+</b:includable>
+          <b:includable id='postJumpLink' var='post'>
+  <div class='jump-link flat-button'>
+    <a expr:href='data:post.url fragment &quot;more&quot;' expr:title='data:post.title'>
+      <b:eval expr='data:blog.jumpLinkMessage'/>
+    </a>
+  </div>
+</b:includable>
+          <b:includable id='postLabels'>
+  <span class='byline post-labels'>
+    <span class='byline-label'><data:byline.label/></span>
+    <b:loop index='i' values='data:post.labels' var='label'>
+      <a expr:href='data:label.url' rel='tag'>
+        <data:label.name/>
+      </a>
+    </b:loop>
+  </span>
+</b:includable>
+          <b:includable id='postLocation'>
+  <span class='byline post-location'>
+    <data:byline.label/>
+    <a expr:href='data:post.location.mapsUrl' target='_blank'><data:post.location.name/></a>
+  </span>
+</b:includable>
+          <b:includable id='postMeta' var='post'>
+  <b:include data='post' name='postMetadataJSON'/>
+</b:includable>
+          <b:includable id='postMetadataJSONImage'>
+  &quot;image&quot;: {
+    &quot;@type&quot;: &quot;ImageObject&quot;,
+    <b:if cond='data:post.featuredImage.isResizable'>
+    &quot;url&quot;: &quot;<b:eval expr='resizeImage(data:post.featuredImage, 1200, &quot;1200:630&quot;)'/>&quot;,
+    &quot;height&quot;: 630,
+    &quot;width&quot;: 1200
+    <b:else/>
+    &quot;url&quot;: &quot;https://blogger.googleusercontent.com/img/b/U2hvZWJveA/AVvXsEgfMvYAhAbdHksiBA24JKmb2Tav6K0GviwztID3Cq4VpV96HaJfy0viIu8z1SSw_G9n5FQHZWSRao61M3e58ImahqBtr7LiOUS6m_w59IvDYwjmMcbq3fKW4JSbacqkbxTo8B90dWp0Cese92xfLMPe_tg11g/w1200/&quot;,
+    &quot;height&quot;: 348,
+    &quot;width&quot;: 1200
+    </b:if>
+  },
+</b:includable>
+          <b:includable id='postMetadataJSONPublisher'>
+ &quot;publisher&quot;: {
+    &quot;@type&quot;: &quot;Organization&quot;,
+    &quot;name&quot;: &quot;Blogger&quot;,
+    &quot;logo&quot;: {
+      &quot;@type&quot;: &quot;ImageObject&quot;,
+      &quot;url&quot;: &quot;https://blogger.googleusercontent.com/img/b/U2hvZWJveA/AVvXsEgfMvYAhAbdHksiBA24JKmb2Tav6K0GviwztID3Cq4VpV96HaJfy0viIu8z1SSw_G9n5FQHZWSRao61M3e58ImahqBtr7LiOUS6m_w59IvDYwjmMcbq3fKW4JSbacqkbxTo8B90dWp0Cese92xfLMPe_tg11g/h60/&quot;,
+      &quot;width&quot;: 206,
+      &quot;height&quot;: 60
+    }
+  },
+</b:includable>
+          <b:includable id='postPagination'>
+  <div class='blog-pager container' id='blog-pager'>
+    <b:include cond='data:newerPageUrl' name='previousPageLink'/>
+    <b:include cond='data:olderPageUrl' name='nextPageLink'/>
+    <b:include cond='data:view.url != data:blog.homepageUrl' name='homePageLink'/>
+  </div>
+</b:includable>
+          <b:includable id='postReactions'>
+  <!-- Reaction feature no longer available. The includable is retained for backwards-compatibility. -->
+</b:includable>
+          <b:includable id='postShareButtons'>
+  <div class='byline post-share-buttons goog-inline-block'>
+    <b:with value='data:sharingId ?: ((data:widget.instanceId ?: &quot;sharing&quot;) + &quot;-&quot; + (data:regionName ?: &quot;byline&quot;) + &quot;-&quot; + data:post.id)' var='sharingId'>
+      <!-- Note: 'sharingButtons' includable is from the default Sharing widget markup. -->
+      <b:include data='{                                                sharingId: data:sharingId,                                                originalUrl: data:post.url,                                                platforms: data:this.sharing.platforms,                                                shareUrl: data:post.shareUrl,                                                shareTitle: data:post.title,                                              }' name='sharingButtons'/>
+    </b:with>
+  </div>
+</b:includable>
+          <b:includable id='postTimestamp'>
+  <span class='byline post-timestamp'>
+    <data:byline.label/>
+    <b:if cond='data:post.url'>
+      <meta expr:content='data:post.url.canonical'/>
+      <a class='timestamp-link' expr:href='data:post.url' rel='bookmark' title='permanent link'>
+        <time class='published' expr:datetime='data:post.date.iso8601' expr:title='data:post.date.iso8601'>
+          <data:post.date/>
+        </time>
+      </a>
+    </b:if>
+  </span>
+</b:includable>
+          <b:includable id='postTitle' var='post'>
+  <a expr:name='data:post.id'/>
+  <b:if cond='data:post.title != &quot;&quot;'>
+    <h3 class='post-title entry-title'>
+      <b:if cond='data:post.link or (data:post.url and data:view.url != data:post.url)'>
+        <a expr:href='data:post.link ?: data:post.url'><data:post.title/></a>
+      <b:else/>
+        <data:post.title/>
+      </b:if>
+    </h3>
+  </b:if>
+</b:includable>
+          <b:includable id='previousPageLink'>
+  <a class='blog-pager-newer-link' expr:href='data:newerPageUrl' expr:id='data:widget.instanceId + &quot;_blog-pager-newer-link&quot;' expr:title='data:messages.newerPosts'>
+    <data:messages.newerPosts/>
+  </a>
+</b:includable>
+          <b:includable id='sharingButton'>
+  <span expr:aria-label='data:platform.shareMessage' expr:class='&quot;sharing-platform-button sharing-element-&quot; + data:platform.key' expr:data-href='data:shareUrl + &quot;&amp;target=&quot; + data:platform.target' expr:data-url='data:originalUrl' expr:title='data:platform.shareMessage' role='menuitem' tabindex='-1'>
+    <b:include name='sharingPlatformIcon'/>
+    <span class='platform-sharing-text'><data:platform.name/></span>
+  </span>
+</b:includable>
+          <b:includable id='sharingButtonContent'>
+  <div class='flat-icon-button ripple'>
+    <b:include name='shareIcon'/>
+  </div>
+</b:includable>
+          <b:includable id='sharingButtons'>
+  <div class='sharing' expr:aria-owns='&quot;sharing-popup-&quot; + data:sharingId' expr:data-title='data:shareTitle'>
+    <button class='sharing-button touch-icon-button' expr:aria-controls='&quot;sharing-popup-&quot; + data:sharingId' expr:aria-label='data:messages.share.escaped' expr:id='&quot;sharing-button-&quot; + data:sharingId' role='button'>
+      <b:include name='sharingButtonContent'/>
+    </button>
+    <b:include name='sharingButtonsMenu'/>
+  </div>
+</b:includable>
+          <b:includable id='sharingButtonsMenu'>
+  <div class='share-buttons-container'>
+    <ul aria-hidden='true' class='share-buttons hidden' expr:aria-label='data:messages.share.escaped' expr:id='&quot;sharing-popup-&quot; + data:sharingId' role='menu'>
+      <b:loop values='(data:platforms ?: data:blog.sharing.platforms) filter (p =&gt; p.key not in {&quot;blogThis&quot;})' var='platform'>
+        <li>
+          <b:include name='sharingButton'/>
+        </li>
+      </b:loop>
+      <li aria-hidden='true' class='hidden'>
+        <b:include name='otherSharingButton'/>
+      </li>
+    </ul>
+  </div>
+</b:includable>
+          <b:includable id='sharingPlatformIcon'>
+  <b:include data='{ iconClass: (&quot;touch-icon sharing-&quot; + data:platform.key) }' expr:name='data:platform.key + &quot;Icon&quot;'/>
+</b:includable>
+          <b:includable id='threadedCommentForm' var='post'>
+  <div class='comment-form'>
+    <a name='comment-form'/>
+    <h4 id='comment-post-message'><data:messages.postAComment/></h4>
+    <b:if cond='data:this.messages.blogComment != &quot;&quot;'>
+      <p><data:this.messages.blogComment/></p>
+    </b:if>
+    <b:include data='post' name='commentFormIframeSrc'/>
+    <iframe allowtransparency='allowtransparency' class='blogger-iframe-colorize blogger-comment-from-post' expr:height='data:cmtIframeInitialHeight ?: &quot;90px&quot;' frameborder='0' id='comment-editor' name='comment-editor' src='' width='100%'/>
+    <data:post.cmtfpIframe/>
+    <script type='text/javascript'>
+      BLOG_CMT_createIframe(&#39;<data:post.appRpcRelayPath/>&#39;);
+    </script>
+  </div>
+</b:includable>
+          <b:includable id='threadedCommentJs' var='post'>
+  <script async='async' expr:src='data:post.commentSrc' type='text/javascript'/>
+  <b:template-script inline='true' name='threaded_comments'/>
+  <script type='text/javascript'>
+    blogger.widgets.blog.initThreadedComments(
+        <data:post.commentJso/>,
+        <data:post.commentMsgs/>,
+        <data:post.commentConfig/>);
+  </script>
+</b:includable>
+          <b:includable id='threadedComments' var='post'>
+  <section class='comments threaded' expr:data-embed='data:post.embedCommentForm' expr:data-num-comments='data:post.numberOfComments' id='comments'>
+    <a name='comments'/>
+
+    <b:include name='commentsTitle'/>
+
+    <div class='comments-content'>
+      <b:if cond='data:post.embedCommentForm'>
+        <b:include data='post' name='threadedCommentJs'/>
+      </b:if>
+      <div id='comment-holder'>
+         <data:post.commentHtml/>
+      </div>
+    </div>
+
+    <p class='comment-footer'>
+      <b:if cond='data:post.allowNewComments'>
+        <b:include data='post' name='threadedCommentForm'/>
+      <b:else/>
+        <data:post.noNewCommentsText/>
+      </b:if>
+      <b:if cond='data:post.showManageComments'>
+        <b:include data='post' name='manageComments'/>
+      </b:if>
+    </p>
+
+    <b:if cond='data:showCmtPopup'>
+      <div id='comment-popup'>
+        <iframe allowtransparency='allowtransparency' frameborder='0' id='comment-actions' name='comment-actions' scrolling='no'>
+        </iframe>
+      </div>
+    </b:if>
+  </section>
+</b:includable>
+          <b:includable id='tooltipCss'>
+  <!-- LINT.IfChange -->
+  <style>
+    .post-body a.b-tooltip-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .post-body a.b-tooltip-container .b-tooltip {
+      display: block !important;
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translate(-20%, 1px);
+      visibility: hidden;
+      opacity: 0;
+      z-index: 1;
+      transition: opacity 0.2s ease-in-out;
+    }
+
+    .post-body a.b-tooltip-container .b-tooltip iframe {
+      width: 200px;
+      height: 198px;
+      max-width: none;
+      border: none;
+      border-radius: 20px;
+      box-shadow: 1px 1px 3px 1px rgba(0, 0, 0, 0.2);
+    }
+
+    @media (hover: hover) {
+      .post-body a.b-tooltip-container:hover .b-tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+    }
+  </style>
+  <!-- LINT.ThenChange(//depot/google3/java/com/google/blogger/b2/layouts/widgets/v2-style.css) -->
+</b:includable>
+        </b:widget>
+      </b:section>
+    </div>
+
+    <script>
+      // <![CDATA[
+      
+      // CONFIGURAÇÃO DO MARKED (RENDERIZADOR DE MARKDOWN)
+      const renderer = new marked.Renderer();
+      
+      // Customização do bloco de código
+      renderer.code = function(code, language) {
+        const validLang = language || 'texto';
+        const escapedCode = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        
+        // Botão de executar aparece apenas para HTML
+        const showRun = validLang.toLowerCase() === 'html' || validLang.toLowerCase() === 'xml';
+        
+        return `
+          <div class="code-block-wrapper">
+            <div class="code-header">
+              <span class="lang-label">${validLang}</span>
+              <div class="code-actions">
+                ${showRun ? `<button class="action-btn" onclick="App.runCode(this)" title="Executar Preview">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Preview
+                </button>` : ''}
+                <button class="action-btn" onclick="App.downloadCode(this, '${validLang}')" title="Baixar">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                </button>
+                <button class="action-btn" onclick="App.copyCode(this)" title="Copiar">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                </button>
+              </div>
+            </div>
+            <pre><code class="language-${validLang}">${escapedCode}</code></pre>
+            <div style="display:none;" class="raw-code">${escapedCode}</div>
+          </div>
+        `;
+      };
+      marked.use({ renderer });
+
+      // --- UI MODULE ---
+      const UI = {
+        chatBox: document.getElementById('chat-box'),
+        userInput: document.getElementById('user-input'),
+        sidebar: document.getElementById('sidebar'),
+        overlay: document.getElementById('mobile-overlay'),
+        chatList: document.getElementById('chat-list'),
+        
+        init() {
+          this.userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+          });
+          this.userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); App.sendMessage(); }
+          });
+          this.updateModelBadge();
+        },
+
+        toggleSidebar() {
+          this.sidebar.classList.toggle('active');
+          this.overlay.classList.toggle('active');
+        },
+
+        openSettings() {
+          document.getElementById('api-key').value = localStorage.getItem('groq_key') || '';
+          document.getElementById('model-input').value = localStorage.getItem('groq_model') || 'llama-3.1-70b-versatile';
+          document.getElementById('system-prompt').value = localStorage.getItem('groq_system') || '';
+          document.getElementById('settings-modal').classList.add('active');
+        },
+
+        closeSettings() {
+          document.getElementById('settings-modal').classList.remove('active');
+        },
+        
+        updateModelBadge() {
+          document.getElementById('current-model-badge').innerText = localStorage.getItem('groq_model') || 'Não configurado';
+        },
+
+        setLoading(loading) {
+          document.getElementById('typing-indicator').style.display = loading ? 'block' : 'none';
+          document.getElementById('btn-submit').disabled = loading;
+          this.chatBox.scrollTop = this.chatBox.scrollHeight;
+        },
+
+        renderMessages(messages) {
+          this.chatBox.innerHTML = '';
+          messages.forEach(msg => {
+            if (msg.role === 'system') return;
+            this.appendMessage(msg.role, msg.content);
+          });
+        },
+
+        appendMessage(role, text) {
+          const row = document.createElement('div');
+          row.className = `msg-row ${role === 'user' ? 'user' : 'ai'}`;
+          
+          const bubble = document.createElement('div');
+          bubble.className = `bubble ${role === 'user' ? 'user' : 'ai'}`;
+          
+          if (role === 'assistant') {
+            bubble.innerHTML = marked.parse(text);
+            bubble.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+          } else {
+            bubble.innerText = text;
+          }
+          
+          row.appendChild(bubble);
+          this.chatBox.appendChild(row);
+          this.chatBox.scrollTop = this.chatBox.scrollHeight;
+        }
+      };
+
+      // --- APP LOGIC ---
+      const App = {
+        chats: [],
+        currentChatId: null,
+
+        init() {
+          UI.init();
+          this.loadChats();
+          const savedKey = localStorage.getItem('groq_key');
+          
+          if (!savedKey) {
+            UI.openSettings();
+          } else if (this.chats.length === 0) {
+            this.createNewChat();
+          } else {
+            // Carrega o último chat ou o primeiro
+            this.loadChat(this.chats[0].id);
+          }
+        },
+
+        saveSettings() {
+          localStorage.setItem('groq_key', document.getElementById('api-key').value.trim());
+          localStorage.setItem('groq_model', document.getElementById('model-input').value.trim());
+          localStorage.setItem('groq_system', document.getElementById('system-prompt').value.trim());
+          UI.closeSettings();
+          UI.updateModelBadge();
+          alert('Configurações salvas!');
+        },
+
+        // --- GERENCIAMENTO DE CHATS ---
+        loadChats() {
+          const saved = localStorage.getItem('groq_chats');
+          this.chats = saved ? JSON.parse(saved) : [];
+          this.renderChatList();
+        },
+
+        saveChatsToStorage() {
+          localStorage.setItem('groq_chats', JSON.stringify(this.chats));
+          this.renderChatList();
+        },
+
+        createNewChat() {
+          const newChat = {
+            id: Date.now().toString(),
+            title: 'Novo Chat',
+            messages: [{ role: "system", content: localStorage.getItem('groq_system') || "Você é um assistente útil." }]
+          };
+          this.chats.unshift(newChat);
+          this.saveChatsToStorage();
+          this.loadChat(newChat.id);
+          if(window.innerWidth <= 768) UI.toggleSidebar();
+        },
+
+        loadChat(id) {
+          this.currentChatId = id;
+          const chat = this.chats.find(c => c.id === id);
+          if (!chat) return;
+
+          document.getElementById('header-title').innerText = chat.title;
+          UI.renderMessages(chat.messages);
+          this.renderChatList(); // Atualiza classe active
+        },
+
+        deleteChat(e, id) {
+          e.stopPropagation();
+          if(!confirm('Apagar este chat?')) return;
+          this.chats = this.chats.filter(c => c.id !== id);
+          this.saveChatsToStorage();
+          
+          if (this.chats.length > 0) {
+            this.loadChat(this.chats[0].id);
+          } else {
+            this.createNewChat();
+          }
+        },
+
+        renderChatList() {
+          UI.chatList.innerHTML = '';
+          this.chats.forEach(chat => {
+            const el = document.createElement('div');
+            el.className = `chat-item ${chat.id === this.currentChatId ? 'active' : ''}`;
+            el.onclick = () => { 
+              this.loadChat(chat.id);
+              if(window.innerWidth <= 768) UI.toggleSidebar();
+            };
+            el.innerHTML = `
+              <span class="chat-title">${chat.title}</span>
+              <button class="delete-chat" onclick="App.deleteChat(event, '${chat.id}')">✕</button>
+            `;
+            UI.chatList.appendChild(el);
+          });
+        },
+
+        async sendMessage() {
+          const text = UI.userInput.value.trim();
+          const apiKey = localStorage.getItem('groq_key');
+          if (!text || !apiKey) return;
+
+          const chatIndex = this.chats.findIndex(c => c.id === this.currentChatId);
+          if (chatIndex === -1) return;
+
+          // Adiciona msg usuario
+          UI.appendMessage('user', text);
+          this.chats[chatIndex].messages.push({ role: "user", content: text });
+          
+          // Atualiza titulo se for a primeira msg
+          if (this.chats[chatIndex].messages.length <= 2) {
+            this.chats[chatIndex].title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+            document.getElementById('header-title').innerText = this.chats[chatIndex].title;
+          }
+          
+          this.saveChatsToStorage(); // Salva estado
+          UI.userInput.value = '';
+          UI.userInput.style.height = 'auto';
+          UI.setLoading(true);
+
+          try {
+            // Prepara histórico (envia ultimas 10 msgs para economizar tokens)
+            const context = [
+              this.chats[chatIndex].messages[0], // System
+              ...this.chats[chatIndex].messages.slice(-10)
+            ];
+
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                messages: context, 
+                model: localStorage.getItem('groq_model'),
+                temperature: 0.7 
+              })
+            });
+
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+            
+            const aiText = data.choices[0].message.content;
+            UI.appendMessage('assistant', aiText);
+            
+            this.chats[chatIndex].messages.push({ role: "assistant", content: aiText });
+            this.saveChatsToStorage();
+
+          } catch (err) {
+            UI.appendMessage('ai', `⚠️ **Erro:** ${err.message}`);
+          } finally {
+            UI.setLoading(false);
+          }
+        },
+
+        // --- FERRAMENTAS DE CÓDIGO ---
+        
+        // Recupera o código bruto decodificado
+        getRawCode(btn) {
+          const wrapper = btn.closest('.code-header').nextElementSibling.nextElementSibling; // .raw-code div
+          const txt = document.createElement("textarea");
+          txt.innerHTML = wrapper.innerHTML;
+          return txt.value;
+        },
+
+        copyCode(btn) {
+          const code = this.getRawCode(btn);
+          navigator.clipboard.writeText(code).then(() => {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span>✓</span>';
+            setTimeout(() => btn.innerHTML = originalHtml, 2000);
+          });
+        },
+
+        downloadCode(btn, lang) {
+          const code = this.getRawCode(btn);
+          const extMap = { 'javascript': 'js', 'python': 'py', 'html': 'html', 'css': 'css', 'json': 'json' };
+          const ext = extMap[lang.toLowerCase()] || 'txt';
+          
+          const blob = new Blob([code], { type: 'text/plain' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `codigo.${ext}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+
+        runCode(btn) {
+          const code = this.getRawCode(btn);
+          const modal = document.getElementById('preview-modal');
+          const frame = document.getElementById('preview-frame');
+          
+          modal.classList.add('active');
+          // Injeta o código no iframe
+          const blob = new Blob([code], { type: 'text/html' });
+          frame.src = URL.createObjectURL(blob);
+        }
+      };
+
+      window.onload = () => App.init();
+      // ]]>
+    </script>
+  </body>
+</html>
