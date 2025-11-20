@@ -1181,10 +1181,11 @@
 
           try {
             // Prepara histórico (envia ultimas 10 msgs para economizar tokens)
-            const context = [
-              this.chats[chatIndex].messages[0], // System
-              ...this.chats[chatIndex].messages.slice(-10)
-            ];
+            const allMsgs = this.chats[chatIndex].messages;
+            const context = allMsgs.slice(-10);
+            if (context[0] !== allMsgs[0]) {
+              context.unshift(allMsgs[0]);
+            }
 
             const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
