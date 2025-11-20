@@ -230,14 +230,42 @@
     <div class='modal-overlay' id='settings-modal'>
       <div class='modal'>
         <h2 style='margin-bottom:20px; color:#fff;'>Configurações API</h2>
+
         <div class='form-group'>
-          <label>Groq API Key</label>
-          <input class='form-control' id='api-key' placeholder='gsk_...' type='password'/>
+          <label>Provedor</label>
+          <select class='form-control' id='provider-select' onchange='UI.updateSettingsUI()'>
+            <option value='groq'>Groq</option>
+            <option value='openai'>OpenAI</option>
+            <option value='openrouter'>OpenRouter</option>
+          </select>
         </div>
+
+        <div class='provider-section' id='config-groq'>
+          <div class='form-group'>
+            <label>Groq API Key</label>
+            <input class='form-control' id='api-key-groq' placeholder='gsk_...' type='password'/>
+          </div>
+        </div>
+
+        <div class='provider-section' id='config-openai' style='display:none;'>
+          <div class='form-group'>
+            <label>OpenAI API Key</label>
+            <input class='form-control' id='api-key-openai' placeholder='sk-...' type='password'/>
+          </div>
+        </div>
+
+        <div class='provider-section' id='config-openrouter' style='display:none;'>
+          <div class='form-group'>
+            <label>OpenRouter API Key</label>
+            <input class='form-control' id='api-key-openrouter' placeholder='sk-or-...' type='password'/>
+          </div>
+        </div>
+
         <div class='form-group'>
           <label>Modelo</label>
-          <input class='form-control' id='model-input' placeholder='llama-3.1-70b-versatile' type='text' value='llama-3.1-70b-versatile'/>
+          <input class='form-control' id='model-input' placeholder='ex: llama-3.1-70b-versatile' type='text'/>
         </div>
+
         <div class='form-group'>
           <label>System Prompt</label>
           <textarea class='form-control' id='system-prompt' rows='3'>Você é um programador expert e prestativo. Responda com código limpo e explicações claras.</textarea>
@@ -1015,10 +1043,49 @@
         },
 
         openSettings() {
-          document.getElementById('api-key').value = localStorage.getItem('groq_key') || '';
-          document.getElementById('model-input').value = localStorage.getItem('groq_model') || 'llama-3.1-70b-versatile';
-          document.getElementById('system-prompt').value = localStorage.getItem('groq_system') || '';
+          const provider = localStorage.getItem('active_provider') || 'groq';
+          document.getElementById('provider-select').value = provider;
+
+          // Load all keys
+          document.getElementById('api-key-groq').value = localStorage.getItem('groq_key') || '';
+          document.getElementById('api-key-openai').value = localStorage.getItem('openai_key') || '';
+          document.getElementById('api-key-openrouter').value = localStorage.getItem('openrouter_key') || '';
+
+          // Load model for active provider
+          const modelKey = provider + '_model';
+          const defaultModels = {
+            'groq': 'llama-3.1-70b-versatile',
+            'openai': 'gpt-4o',
+            'openrouter': 'google/gemini-2.0-flash-001'
+          };
+          document.getElementById('model-input').value = localStorage.getItem(modelKey) || defaultModels[provider] || '';
+
+          document.getElementById('system-prompt').value = localStorage.getItem('system_prompt') || localStorage.getItem('groq_system') || ''; // Migration fallback
+
+          this.updateSettingsUI();
           document.getElementById('settings-modal').classList.add('active');
+        },
+
+        updateSettingsUI() {
+          const provider = document.getElementById('provider-select').value;
+          document.querySelectorAll('.provider-section').forEach(el => el.style.display = 'none');
+          document.getElementById('config-' + provider).style.display = 'block';
+
+          // Update model placeholder or value if empty?
+          // Better to load the saved model for that provider when switching?
+          // Yes, let's try to switch the model input value dynamically if the user changes provider in the UI
+          // But we need to store the current input value to the previous provider first if we want to be fancy.
+          // For simplicity, let's just load the saved value from LS.
+          const modelKey = provider + '_model';
+          const defaultModels = {
+            'groq': 'llama-3.1-70b-versatile',
+            'openai': 'gpt-4o',
+            'openrouter': 'google/gemini-2.0-flash-001'
+          };
+          // Only update if we are actually switching (not just typing) - but this function is called on change.
+          // NOTE: this might overwrite unsaved changes to model if user switches back and forth.
+          // Accepted trade-off for now.
+          document.getElementById('model-input').value = localStorage.getItem(modelKey) || defaultModels[provider] || '';
         },
 
         closeSettings() {
@@ -1026,7 +1093,10 @@
         },
         
         updateModelBadge() {
-          document.getElementById('current-model-badge').innerText = localStorage.getItem('groq_model') || 'Não configurado';
+          const provider = localStorage.getItem('active_provider') || 'groq';
+          const modelKey = provider + '_model';
+          const model = localStorage.getItem(modelKey) || 'Não configurado';
+          document.getElementById('current-model-badge').innerText = `${provider.toUpperCase()}: ${model}`;
         },
 
         setLoading(loading) {
@@ -1084,9 +1154,19 @@
         },
 
         saveSettings() {
-          localStorage.setItem('groq_key', document.getElementById('api-key').value.trim());
-          localStorage.setItem('groq_model', document.getElementById('model-input').value.trim());
-          localStorage.setItem('groq_system', document.getElementById('system-prompt').value.trim());
+          const provider = document.getElementById('provider-select').value;
+          localStorage.setItem('active_provider', provider);
+
+          localStorage.setItem('groq_key', document.getElementById('api-key-groq').value.trim());
+          localStorage.setItem('openai_key', document.getElementById('api-key-openai').value.trim());
+          localStorage.setItem('openrouter_key', document.getElementById('api-key-openrouter').value.trim());
+
+          // Save model for the ACTIVE provider
+          const modelKey = provider + '_model';
+          localStorage.setItem(modelKey, document.getElementById('model-input').value.trim());
+
+          localStorage.setItem('system_prompt', document.getElementById('system-prompt').value.trim());
+
           UI.closeSettings();
           UI.updateModelBadge();
           alert('Configurações salvas!');
@@ -1108,7 +1188,7 @@
           const newChat = {
             id: Date.now().toString(),
             title: 'Novo Chat',
-            messages: [{ role: "system", content: localStorage.getItem('groq_system') || "Você é um assistente útil." }]
+            messages: [{ role: "system", content: localStorage.getItem('system_prompt') || localStorage.getItem('groq_system') || "Você é um assistente útil." }]
           };
           this.chats.unshift(newChat);
           this.saveChatsToStorage();
@@ -1158,8 +1238,14 @@
 
         async sendMessage() {
           const text = UI.userInput.value.trim();
-          const apiKey = localStorage.getItem('groq_key');
-          if (!text || !apiKey) return;
+
+          const provider = localStorage.getItem('active_provider') || 'groq';
+          const apiKey = localStorage.getItem(provider + '_key');
+
+          if (!text || !apiKey) {
+             if(!apiKey) alert('API Key não configurada para ' + provider.toUpperCase());
+             return;
+          }
 
           const chatIndex = this.chats.findIndex(c => c.id === this.currentChatId);
           if (chatIndex === -1) return;
@@ -1187,12 +1273,25 @@
               context.unshift(allMsgs[0]);
             }
 
-            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            let apiUrl = '';
+            let headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+
+            if (provider === 'groq') {
+                apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+            } else if (provider === 'openai') {
+                apiUrl = 'https://api.openai.com/v1/chat/completions';
+            } else if (provider === 'openrouter') {
+                apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                headers['HTTP-Referer'] = 'https://github.com/jules/blogger-chat'; // Optional, good practice
+                headers['X-Title'] = 'Blogger Chat';
+            }
+
+            const res = await fetch(apiUrl, {
               method: 'POST',
-              headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+              headers: headers,
               body: JSON.stringify({ 
                 messages: context, 
-                model: localStorage.getItem('groq_model'),
+                model: localStorage.getItem(provider + '_model'),
                 temperature: 0.7 
               })
             });
