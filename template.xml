@@ -267,6 +267,10 @@
             <label>OpenRouter API Key</label>
             <input class='form-control' id='api-key-openrouter' placeholder='sk-or-...' type='password'/>
           </div>
+          <div class='form-group' style='display:flex; align-items:center; gap:10px; margin-top:10px;'>
+            <input id='openrouter-web-search' type='checkbox'/>
+            <label for='openrouter-web-search' style='margin:0; cursor:pointer;'>Habilitar Web Search</label>
+          </div>
         </div>
 
         <div class='form-group'>
@@ -1119,6 +1123,9 @@
           document.getElementById('openai-use-responses').checked = localStorage.getItem('openai_use_responses') === 'true';
           document.getElementById('openai-web-search').checked = localStorage.getItem('openai_web_search') === 'true';
 
+          // Load OpenRouter specific flags
+          document.getElementById('openrouter-web-search').checked = localStorage.getItem('openrouter_web_search') === 'true';
+
           // Load model for active provider
           const modelKey = provider + '_model';
           const defaultModels = {
@@ -1231,6 +1238,8 @@
 
           localStorage.setItem('openai_use_responses', document.getElementById('openai-use-responses').checked);
           localStorage.setItem('openai_web_search', document.getElementById('openai-web-search').checked);
+
+          localStorage.setItem('openrouter_web_search', document.getElementById('openrouter-web-search').checked);
 
           // Save model for the ACTIVE provider
           const modelKey = provider + '_model';
@@ -1385,6 +1394,10 @@
                     model: localStorage.getItem(provider + '_model'),
                     temperature: 0.7
                 };
+
+                if (provider === 'openrouter' && localStorage.getItem('openrouter_web_search') === 'true') {
+                    body.plugins = [{ id: "web" }];
+                }
             }
 
             const res = await fetch(apiUrl, {
