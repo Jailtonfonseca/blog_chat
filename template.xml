@@ -1048,15 +1048,31 @@
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
           });
-          this.userInput.addEventListener('keydown', (e) => {
+
+          // Global key listener
+          document.addEventListener('keydown', (e) => {
+            // Ignore if user is typing in another input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+               if (e.target !== this.userInput) return;
+            }
+
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
+              this.userInput.focus();
               App.sendMessage();
             }
+
             // History Navigation
-            if (e.key === 'ArrowUp') this.handleHistoryNav(e, 'up');
-            if (e.key === 'ArrowDown') this.handleHistoryNav(e, 'down');
+            if (e.key === 'ArrowUp') {
+                this.userInput.focus();
+                this.handleHistoryNav(e, 'up');
+            }
+            if (e.key === 'ArrowDown') {
+                this.userInput.focus();
+                this.handleHistoryNav(e, 'down');
+            }
           });
+
           this.updateModelBadge();
           this.historyIndex = this.cmdHistory.length; // Initialize to "end"
         },
@@ -1364,13 +1380,10 @@
             if (useResponsesApi) {
                 apiUrl = 'https://api.openai.com/v1/responses';
 
-                // For Responses API, 'input' can be a list of messages to preserve history.
-                // We filter out the system message from context because it goes into 'instructions'.
-                const inputMessages = context.filter(msg => msg.role !== 'system');
-
+                // Use simple string input for Responses API to ensure compatibility with web search tools
                 body = {
                     model: localStorage.getItem(provider + '_model'),
-                    input: inputMessages,
+                    input: text,
                     instructions: localStorage.getItem('system_prompt') || "You are a helpful assistant."
                 };
 
