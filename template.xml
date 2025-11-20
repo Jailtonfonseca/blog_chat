@@ -1355,12 +1355,6 @@
             if (useResponsesApi) {
                 apiUrl = 'https://api.openai.com/v1/responses';
 
-                // Concatenate history for context since Responses API might be stateless regarding 'input'
-                // or just send the last message. The prompt implies 'input' is the query.
-                // For a better chat experience, let's try to format history into the input or instructions?
-                // Actually, let's strictly follow the "input" field pattern.
-                // Adding 'instructions' (System Prompt) is crucial.
-
                 body = {
                     model: localStorage.getItem(provider + '_model'),
                     input: text,
