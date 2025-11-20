@@ -1424,21 +1424,26 @@
             
             let aiText = '';
             if (useResponsesApi) {
-                // Try different possible structures for the beta API
                 if (data.output_text) {
                     aiText = data.output_text;
                 } else if (data.output && Array.isArray(data.output)) {
-                    // If output is an array of items, try to find the message content
                     aiText = data.output
-                        .filter(item => item.type === 'message')
-                        .map(item => item.content || JSON.stringify(item))
+                        .filter(item => item.type === "message")
+                        .map(item => {
+                            if (Array.isArray(item.content)) {
+                                return item.content
+                                    .map(part => part.text || '')
+                                    .join('');
+                            }
+                            return String(item.content || '');
+                        })
                         .join('\n');
                 }
 
                 if (!aiText) {
-                     // Fallback for debugging
-                     console.log("Raw Responses API response:", data);
-                     aiText = "⚠️ Debug: " + JSON.stringify(data, null, 2);
+                    console.log("DEBUG RAW RESPONSE:", data);
+                    aiText = "⚠️ Não foi possível extrair texto da resposta:\n" +
+                             JSON.stringify(data, null, 2);
                 }
             } else {
                 aiText = data.choices[0].message.content;
