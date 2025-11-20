@@ -1265,7 +1265,7 @@
 
           UI.closeSettings();
           UI.updateModelBadge();
-          alert('Configurações salvas!');
+          // alert('Configurações salvas!'); // Removed popup
         },
 
         // --- GERENCIAMENTO DE CHATS ---
@@ -1304,7 +1304,7 @@
 
         deleteChat(e, id) {
           e.stopPropagation();
-          if(!confirm('Apagar este chat?')) return;
+          // if(!confirm('Apagar este chat?')) return; // Removed popup
           this.chats = this.chats.filter(c => c.id !== id);
           this.saveChatsToStorage();
           
@@ -1424,7 +1424,22 @@
             
             let aiText = '';
             if (useResponsesApi) {
-                aiText = data.output_text || "No output text returned.";
+                // Try different possible structures for the beta API
+                if (data.output_text) {
+                    aiText = data.output_text;
+                } else if (data.output && Array.isArray(data.output)) {
+                    // If output is an array of items, try to find the message content
+                    aiText = data.output
+                        .filter(item => item.type === 'message')
+                        .map(item => item.content || JSON.stringify(item))
+                        .join('\n');
+                }
+
+                if (!aiText) {
+                     // Fallback for debugging
+                     console.log("Raw Responses API response:", data);
+                     aiText = "⚠️ Debug: " + JSON.stringify(data, null, 2);
+                }
             } else {
                 aiText = data.choices[0].message.content;
             }
