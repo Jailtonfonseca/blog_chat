@@ -1355,9 +1355,13 @@
             if (useResponsesApi) {
                 apiUrl = 'https://api.openai.com/v1/responses';
 
+                // For Responses API, 'input' can be a list of messages to preserve history.
+                // We filter out the system message from context because it goes into 'instructions'.
+                const inputMessages = context.filter(msg => msg.role !== 'system');
+
                 body = {
                     model: localStorage.getItem(provider + '_model'),
-                    input: text,
+                    input: inputMessages,
                     instructions: localStorage.getItem('system_prompt') || "You are a helpful assistant."
                 };
 
