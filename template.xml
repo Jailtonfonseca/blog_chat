@@ -252,6 +252,14 @@
             <label>OpenAI API Key</label>
             <input class='form-control' id='api-key-openai' placeholder='sk-...' type='password'/>
           </div>
+          <div class='form-group' style='display:flex; align-items:center; gap:10px; margin-top:10px;'>
+            <input id='openai-use-responses' type='checkbox'/>
+            <label for='openai-use-responses' style='margin:0; cursor:pointer;'>Usar Responses API (Beta / GPT-5)</label>
+          </div>
+          <div class='form-group' style='display:flex; align-items:center; gap:10px; margin-top:5px;'>
+            <input id='openai-web-search' type='checkbox'/>
+            <label for='openai-web-search' style='margin:0; cursor:pointer;'>Habilitar Web Search</label>
+          </div>
         </div>
 
         <div class='provider-section' id='config-openrouter' style='display:none;'>
@@ -1051,6 +1059,10 @@
           document.getElementById('api-key-openai').value = localStorage.getItem('openai_key') || '';
           document.getElementById('api-key-openrouter').value = localStorage.getItem('openrouter_key') || '';
 
+          // Load OpenAI specific flags
+          document.getElementById('openai-use-responses').checked = localStorage.getItem('openai_use_responses') === 'true';
+          document.getElementById('openai-web-search').checked = localStorage.getItem('openai_web_search') === 'true';
+
           // Load model for active provider
           const modelKey = provider + '_model';
           const defaultModels = {
@@ -1160,6 +1172,9 @@
           localStorage.setItem('groq_key', document.getElementById('api-key-groq').value.trim());
           localStorage.setItem('openai_key', document.getElementById('api-key-openai').value.trim());
           localStorage.setItem('openrouter_key', document.getElementById('api-key-openrouter').value.trim());
+
+          localStorage.setItem('openai_use_responses', document.getElementById('openai-use-responses').checked);
+          localStorage.setItem('openai_web_search', document.getElementById('openai-web-search').checked);
 
           // Save model for the ACTIVE provider
           const modelKey = provider + '_model';
@@ -1275,31 +1290,57 @@
 
             let apiUrl = '';
             let headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` };
+            let body = {};
 
-            if (provider === 'groq') {
-                apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-            } else if (provider === 'openai') {
-                apiUrl = 'https://api.openai.com/v1/chat/completions';
-            } else if (provider === 'openrouter') {
-                apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-                headers['HTTP-Referer'] = 'https://github.com/jules/blogger-chat'; // Optional, good practice
-                headers['X-Title'] = 'Blogger Chat';
+            // Logic to determine if we use standard Chat API or Responses API
+            const useResponsesApi = provider === 'openai' && localStorage.getItem('openai_use_responses') === 'true';
+
+            if (useResponsesApi) {
+                apiUrl = 'https://api.openai.com/v1/responses';
+
+                body = {
+                    model: localStorage.getItem(provider + '_model'),
+                    input: text, // Responses API uses 'input' string. Sending last user message.
+                };
+
+                if (localStorage.getItem('openai_web_search') === 'true') {
+                    body.tools = [{ type: "web_search" }];
+                }
+            } else {
+                // Standard Chat Completions API
+                if (provider === 'groq') {
+                    apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+                } else if (provider === 'openai') {
+                    apiUrl = 'https://api.openai.com/v1/chat/completions';
+                } else if (provider === 'openrouter') {
+                    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                    headers['HTTP-Referer'] = 'https://github.com/jules/blogger-chat';
+                    headers['X-Title'] = 'Blogger Chat';
+                }
+
+                body = {
+                    messages: context,
+                    model: localStorage.getItem(provider + '_model'),
+                    temperature: 0.7
+                };
             }
 
             const res = await fetch(apiUrl, {
               method: 'POST',
               headers: headers,
-              body: JSON.stringify({ 
-                messages: context, 
-                model: localStorage.getItem(provider + '_model'),
-                temperature: 0.7 
-              })
+              body: JSON.stringify(body)
             });
 
             const data = await res.json();
             if (data.error) throw new Error(data.error.message);
             
-            const aiText = data.choices[0].message.content;
+            let aiText = '';
+            if (useResponsesApi) {
+                aiText = data.output_text || "No output text returned.";
+            } else {
+                aiText = data.choices[0].message.content;
+            }
+
             UI.appendMessage('assistant', aiText);
             
             this.chats[chatIndex].messages.push({ role: "assistant", content: aiText });
