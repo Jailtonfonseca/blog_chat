@@ -146,6 +146,7 @@
           background: rgba(0,0,0,0.7); z-index: 90; display: none; backdrop-filter: blur(2px);
         }
         .overlay.active { display: block; }
+        .modal { padding: 15px; width: 95%; }
       }
 
       /* MODAL GENÉRICO */
@@ -155,7 +156,11 @@
         justify-content: center; align-items: center;
       }
       .modal-overlay.active { display: flex; }
-      .modal { background: var(--bg-panel); padding: 25px; width: 90%; max-width: 500px; border-radius: 12px; border: 1px solid var(--border); }
+      .modal {
+        background: var(--bg-panel); padding: 25px; width: 90%; max-width: 500px;
+        border-radius: 12px; border: 1px solid var(--border);
+        max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;
+      }
       .form-group { margin-bottom: 15px; }
       .form-group label { display: block; margin-bottom: 8px; color: #aaa; font-size: 0.9rem; }
       .form-control {
