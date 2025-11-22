@@ -68,6 +68,22 @@ Para que o botão de "Publicar no Blogger" funcione, você precisa configurar um
 
 ---
 
+## ❓ Resolução de Problemas (Troubleshooting)
+
+### Erro 403: "Access blocked: ... has not completed the Google verification process"
+Se você ver uma tela vermelha/branca de erro do Google ao tentar fazer login, isso significa que você esqueceu de adicionar seu email como testador.
+
+1. Volte ao [Google Cloud Console](https://console.cloud.google.com/apis/credentials/consent).
+2. Vá em **Tela de permissão OAuth**.
+3. Role até a seção **Usuários de teste** (Test users).
+4. Clique em **+ ADD USERS**.
+5. Digite o seu endereço de email (o mesmo que você está usando para logar no blog).
+6. Clique em **Salvar**.
+
+> **Nota:** Enquanto o app estiver em modo "Testing" (Teste), apenas os emails listados nessa seção poderão fazer login.
+
+---
+
 ## 🛠️ Como Usar
 
 1.  **Chat:** Digite sua mensagem na caixa inferior. Use `Shift+Enter` para quebra de linha.
