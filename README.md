@@ -15,3 +15,18 @@ Uma interface de chat Single Page Application (SPA) construída dentro de um tem
 *   Chat com IA (Groq, OpenAI, OpenRouter).
 *   Publicação de chats diretamente no Blogger.
 *   Integração com Google Identity Services para autenticação.
+
+## 🌐 Conecte-se comigo
+
+*   **Instagram:** [jailton_fon](https://instagram.com/jailton_fon)
+*   **Facebook:** Zfonseca
+Julio Fonseca - fonseca@123.com
+*   **TikTok:** [@fonsecac41](https://tiktok.com/@fonsecac41)
+*   **Twitch:** [fonsecac41](https://twitch.tv/fonsecac41)
+*   **YouTube:** [@JailtonFonseca](https://www.youtube.com/@JailtonFonseca)
+
+📍 **Brasil** 🇧🇷
+
+---
+
+**Desenvolvido por Jailtonfonseca**
